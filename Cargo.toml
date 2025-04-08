@@ -1,0 +1,15 @@
+[package]
+name = "phprs"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+members = ["crates/*"]
+
+[workspace.dependencies]
+phprs_lexer = { path = "crates/lexer" }
+phprs_parserr = { path = "crates/parserr" }
+
+[dependencies]
+phprs_lexer.workspace = true
+phprs_parserr.workspace = true

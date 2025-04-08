@@ -1,0 +1,9 @@
+[package]
+name = "phprs_parser"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+nom = "7.1.3"
+logos = "0.14.0"
+phprs_lexer.workspace = true

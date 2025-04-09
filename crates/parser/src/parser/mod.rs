@@ -11,6 +11,7 @@ use chumsky::input::Stream;
 use chumsky::input::ValueInput;
 use chumsky::prelude::*;
 use chumsky::Parser;
+use log::info;
 use phprs_lexer::Token;
 use script::Script;
 
@@ -26,7 +27,7 @@ pub fn parse(content: &str) {
         Stream::from_iter(token_iter).map((0..content.len()).into(), |(t, s): (_, _)| (t, s));
 
     match Script::parser().parse(token_stream).into_result() {
-        Ok(script) => println!("{:#?}", script),
+        Ok(script) => info!("{:#?}", script),
         Err(errs) => {
             for err in errs {
                 Report::build(ReportKind::Error, (), err.span().start)

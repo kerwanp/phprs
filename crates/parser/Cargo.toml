@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 phprs_lexer.workspace = true
+log.workspace = true
 ariadne = "0.2"
 chumsky = { version = "0.10.0", features = [
   "pratt",

@@ -6,12 +6,12 @@ use phprs_lexer::Token;
 use super::type_declaration::TypeDeclaration;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum ReturnType {
+pub enum ReturnType<'a> {
     Void,
-    Declaration(TypeDeclaration),
+    Declaration(TypeDeclaration<'a>),
 }
 
-impl<'a> ReturnType {
+impl<'a> ReturnType<'a> {
     pub fn parser<I>() -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,

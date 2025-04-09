@@ -7,7 +7,7 @@ use crate::parser::atoms::{
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct VariadicParameter<'a> {
-    r#type: Option<TypeDeclaration>,
+    r#type: Option<TypeDeclaration<'a>>,
     reference: bool,
     name: VariableName<'a>,
 }

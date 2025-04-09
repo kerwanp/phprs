@@ -30,6 +30,7 @@ impl<'a> IssetIntrinsic<'a> {
 mod tests {
     use crate::parser::{
         atoms::name::variable_name::VariableName,
+        statements::Statement,
         tokenize,
         variables::{callable::CallableVariable, simple::SimpleVariable},
     };
@@ -39,7 +40,7 @@ mod tests {
     fn parse(src: &str) -> Result<IssetIntrinsic, ()> {
         let tokens = tokenize(src);
 
-        IssetIntrinsic::parser(Expression::parser().boxed())
+        IssetIntrinsic::parser(Expression::parser(Statement::parser()))
             .parse(tokens)
             .into_result()
             .map_err(|_| ())

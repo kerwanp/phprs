@@ -16,7 +16,7 @@ pub enum PropertyModifier {
 
 impl<'a> PropertyModifier {
     // TODO: Might be a better way to parse that
-    pub fn parser<I>() -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>>
+    pub fn parser<I>() -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {

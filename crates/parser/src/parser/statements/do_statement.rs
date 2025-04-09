@@ -21,10 +21,10 @@ impl<'a> DoStatement<'a> {
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
         just(Token::DoKeyword)
-            .ignore_then(statement_parser)
+            .ignore_then(statement_parser.clone())
             .then_ignore(just(Token::WhileKeyword))
             .then_ignore(just(Token::OpenParen))
-            .then(Expression::parser())
+            .then(Expression::parser(statement_parser))
             .then_ignore(just(Token::CloseParen))
             .then_ignore(just(Token::Semicolon))
             .map(|(statement, expression)| DoStatement {

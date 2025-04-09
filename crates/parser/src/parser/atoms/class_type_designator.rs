@@ -30,14 +30,14 @@ impl<'a> ClassTypeDesignator<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::tokenize;
+    use crate::parser::{statements::Statement, tokenize};
 
     use super::*;
 
     fn parse(src: &str) -> Result<ClassTypeDesignator, ()> {
         let token_stream = tokenize(src);
 
-        ClassTypeDesignator::parser(Expression::parser().boxed())
+        ClassTypeDesignator::parser(Expression::parser(Statement::parser()))
             .parse(token_stream)
             .into_result()
             .map_err(|_| ())

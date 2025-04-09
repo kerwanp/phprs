@@ -13,7 +13,7 @@ pub struct ElseClause<'a>(Statement<'a>);
 impl<'a> ElseClause<'a> {
     pub fn parser<I>(
         statement_parser: BoxedParser<'a, I, Statement<'a>>,
-    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>>
+    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
@@ -33,13 +33,13 @@ pub struct ElseIfClause<'a> {
 impl<'a> ElseIfClause<'a> {
     pub fn parser<I>(
         statement_parser: BoxedParser<'a, I, Statement<'a>>,
-    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>>
+    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
         // TODO: Heavily used, move outside for caching?
-        let expr =
-            Expression::parser().delimited_by(just(Token::OpenParen), just(Token::CloseParen));
+        let expr = Expression::parser(statement_parser.clone())
+            .delimited_by(just(Token::OpenParen), just(Token::CloseParen));
 
         just(Token::ElseIfKeyword)
             .ignore_then(expr)
@@ -64,12 +64,12 @@ impl<'a> IfStatement<'a> {
     // TODO: Manage with keywords endif
     pub fn parser<I>(
         statement_parser: BoxedParser<'a, I, Statement<'a>>,
-    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>>
+    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
-        let expr =
-            Expression::parser().delimited_by(just(Token::OpenParen), just(Token::CloseParen));
+        let expr = Expression::parser(statement_parser.clone())
+            .delimited_by(just(Token::OpenParen), just(Token::CloseParen));
 
         let if_clause = just(Token::IfKeyword)
             .ignore_then(expr.clone())

@@ -23,11 +23,12 @@ pub enum TraitMemberDeclaration<'a> {
 impl<'a> TraitMemberDeclaration<'a> {
     pub fn parser<I>(
         statement_parser: BoxedParser<'a, I, Statement<'a>>,
-    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>>
+    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
-        let property_declaration = PropertyDeclaration::parser().map(Self::PropertyDeclarationd);
+        let property_declaration =
+            PropertyDeclaration::parser(statement_parser.clone()).map(Self::PropertyDeclarationd);
         let method_declaration =
             MethodDeclaration::parser(statement_parser.clone()).map(Self::MethodDeclaration);
         let constructor_declaration = ConstructorDeclaration::parser(statement_parser.clone())

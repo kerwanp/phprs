@@ -1,8 +1,10 @@
 pub mod breakout_level;
 pub mod class_modifier;
+pub mod class_type_designator;
 pub mod const_element;
 pub mod intrinsic;
 pub mod literal;
+pub mod member_name;
 pub mod method_modifier;
 pub mod name;
 pub mod parameter;
@@ -13,5 +15,3 @@ pub mod scope_resolution_qualifier;
 pub mod static_modifier;
 pub mod r#type;
 pub mod visibility_modifier;
-pub mod class_type_designator;
-pub mod member_name;

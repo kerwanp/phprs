@@ -41,14 +41,14 @@ impl<'a> Intrinsic<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::tokenize;
+    use crate::parser::{statements::Statement, tokenize};
 
     use super::*;
 
     fn parse(src: &str) -> Result<Intrinsic, ()> {
         let token_stream = tokenize(src);
 
-        Intrinsic::parser(Expression::parser().boxed())
+        Intrinsic::parser(Expression::parser(Statement::parser()))
             .parse(token_stream)
             .into_result()
             .map_err(|_| ())

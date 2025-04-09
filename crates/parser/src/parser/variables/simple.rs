@@ -60,6 +60,7 @@ mod tests {
         expressions::{
             literal_expression::LiteralExpression, primary_expression::PrimaryExpression,
         },
+        statements::Statement,
         tokenize,
     };
 
@@ -68,7 +69,7 @@ mod tests {
     fn parse(src: &str) -> Result<SimpleVariable, ()> {
         let token_stream = tokenize(src);
 
-        SimpleVariable::parser(Expression::parser().boxed())
+        SimpleVariable::parser(Expression::parser(Statement::parser().boxed()))
             .parse(token_stream)
             .into_result()
             .map_err(|_| ())

@@ -35,7 +35,9 @@ impl<'a> ConstructorDeclaration<'a> {
             .then_ignore(just(Token::ConstructKeyword))
             .then(
                 just(Token::OpenParen)
-                    .ignore_then(FunctionDefinition::parameters_parser())
+                    .ignore_then(FunctionDefinition::parameters_parser(
+                        statement_parser.clone(),
+                    ))
                     .then_ignore(just(Token::CloseParen)),
             );
 
@@ -55,6 +57,44 @@ impl<'a> ConstructorDeclaration<'a> {
                     body,
                 },
             )
+            .labelled("Constructor")
             .boxed()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::parser::{atoms::visibility_modifier::VisibilityModifier, tokenize};
+
+    use super::*;
+
+    fn parse(src: &str) -> Result<ConstructorDeclaration, ()> {
+        let token_stream = tokenize(src);
+
+        ConstructorDeclaration::parser(Statement::parser())
+            .parse(token_stream)
+            .into_result()
+            .map_err(|_| ())
+    }
+
+    #[test]
+    fn modifiers() {
+        let res = parse(r#"public function __construct() {}"#);
+
+        assert!(matches!(
+            res.clone().unwrap().modifiers[0],
+            MethodModifier::Visibility(VisibilityModifier::Public)
+        ));
+
+        assert!(matches!(
+            res,
+            Ok(ConstructorDeclaration {
+                modifiers: _,
+                reference: _,
+                parameters: _,
+                variadic: _,
+                body: _
+            })
+        ));
     }
 }

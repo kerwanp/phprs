@@ -3,7 +3,10 @@ use chumsky::{prelude::*, Parser};
 
 use crate::parser::expressions::Expression;
 use crate::parser::variables::Variable;
+use crate::parser::BoxedParser;
 use phprs_lexer::Token;
+
+use super::Statement;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct UnsetStatement<'a> {
@@ -11,13 +14,15 @@ pub struct UnsetStatement<'a> {
 }
 
 impl<'a> UnsetStatement<'a> {
-    pub fn parser<I>() -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>>
+    pub fn parser<I>(
+        statement_parser: BoxedParser<'a, I, Statement<'a>>,
+    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>>
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
         just(Token::UnsetKeyword)
             .ignore_then(just(Token::OpenParen))
-            .ignore_then(Variable::list_parser(Expression::parser().boxed()))
+            .ignore_then(Variable::list_parser(Expression::parser(statement_parser)))
             .then_ignore(just(Token::CloseParen))
             .then_ignore(just(Token::Semicolon))
             .map(|variables| UnsetStatement { variables })
@@ -38,7 +43,7 @@ mod tests {
     fn parse(src: &str) -> Result<UnsetStatement, ()> {
         let token_stream = tokenize(src);
 
-        UnsetStatement::parser()
+        UnsetStatement::parser(Statement::parser().boxed())
             .parse(token_stream)
             .into_result()
             .map_err(|_| ())

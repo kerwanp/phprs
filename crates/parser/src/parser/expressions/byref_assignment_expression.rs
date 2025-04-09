@@ -27,14 +27,14 @@ impl<'a> ByrefAssigmentExpression<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::tokenize;
+    use crate::parser::{statements::Statement, tokenize};
 
     use super::*;
 
     fn parse(src: &str) -> Result<ByrefAssigmentExpression, ()> {
         let tokens = tokenize(src);
 
-        ByrefAssigmentExpression::parser(Expression::parser())
+        ByrefAssigmentExpression::parser(Expression::parser(Statement::parser().boxed()))
             .parse(tokens)
             .into_result()
             .map_err(|_| ())

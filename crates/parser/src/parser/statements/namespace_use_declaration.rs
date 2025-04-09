@@ -11,7 +11,7 @@ pub struct NamespaceUseDeclaration<'a> {
 }
 
 impl<'a> NamespaceUseDeclaration<'a> {
-    pub fn parser<I>() -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>>
+    pub fn parser<I>() -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {

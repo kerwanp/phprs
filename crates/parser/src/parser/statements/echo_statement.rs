@@ -4,6 +4,9 @@ use chumsky::{error::Rich, extra, input::ValueInput, Parser};
 use phprs_lexer::Token;
 
 use crate::parser::expressions::Expression;
+use crate::parser::BoxedParser;
+
+use super::Statement;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct EchoStatement<'a> {
@@ -11,12 +14,14 @@ pub struct EchoStatement<'a> {
 }
 
 impl<'a> EchoStatement<'a> {
-    pub fn parser<I>() -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>>
+    pub fn parser<I>(
+        statement_parser: BoxedParser<'a, I, Statement<'a>>,
+    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
         just(Token::EchoKeyword)
-            .ignore_then(Expression::list_parser())
+            .ignore_then(Expression::list_parser(statement_parser))
             .then_ignore(just(Token::Semicolon))
             .map(|expression| EchoStatement {
                 expressions: expression,
@@ -40,7 +45,7 @@ mod tests {
     fn parse(src: &str) -> Result<EchoStatement, ()> {
         let token_stream = tokenize(src);
 
-        EchoStatement::parser()
+        EchoStatement::parser(Statement::parser().boxed())
             .parse(token_stream)
             .into_result()
             .map_err(|_| ())

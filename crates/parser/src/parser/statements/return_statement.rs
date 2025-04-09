@@ -2,18 +2,23 @@ use chumsky::{input::ValueInput, span::SimpleSpan};
 use chumsky::{prelude::*, Parser};
 
 use crate::parser::expressions::Expression;
+use crate::parser::BoxedParser;
 use phprs_lexer::Token;
+
+use super::Statement;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ReturnStatement<'a>(pub Option<Expression<'a>>);
 
 impl<'a> ReturnStatement<'a> {
-    pub fn parser<I>() -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>>
+    pub fn parser<I>(
+        statement_parser: BoxedParser<'a, I, Statement<'a>>,
+    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
         just(Token::ReturnKeyword)
-            .ignore_then(Expression::parser().or_not())
+            .ignore_then(Expression::parser(statement_parser).or_not())
             .then_ignore(just(Token::Semicolon))
             .map(ReturnStatement)
             .labelled("ReturnStatement")
@@ -35,7 +40,7 @@ mod tests {
     fn parse(src: &str) -> Result<ReturnStatement, ()> {
         let token_stream = tokenize(src);
 
-        ReturnStatement::parser()
+        ReturnStatement::parser(Statement::parser().boxed())
             .parse(token_stream)
             .into_result()
             .map_err(|_| ())

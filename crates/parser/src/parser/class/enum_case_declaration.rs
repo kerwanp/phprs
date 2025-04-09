@@ -1,19 +1,21 @@
 use chumsky::{input::ValueInput, span::SimpleSpan};
 use chumsky::{prelude::*, Parser};
 
-use crate::parser::atoms::const_element::ConstElement;
+use crate::parser::atoms::name::Name;
 use crate::parser::atoms::visibility_modifier::VisibilityModifier;
+use crate::parser::expressions::Expression;
 use crate::parser::statements::Statement;
 use crate::parser::BoxedParser;
 use phprs_lexer::Token;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct ClassConstDeclaration<'a> {
+pub struct EnumCaseDeclaration<'a> {
     visibility: Option<VisibilityModifier>,
-    elements: Vec<ConstElement<'a>>,
+    name: Name<'a>,
+    expression: Expression<'a>,
 }
 
-impl<'a> ClassConstDeclaration<'a> {
+impl<'a> EnumCaseDeclaration<'a> {
     pub fn parser<I>(
         statement_parser: BoxedParser<'a, I, Statement<'a>>,
     ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
@@ -23,12 +25,16 @@ impl<'a> ClassConstDeclaration<'a> {
         let visiblity = VisibilityModifier::parser().or_not();
 
         visiblity
-            .then_ignore(just(Token::ConstKeyword))
-            .then(ConstElement::list_parser(statement_parser))
+            .then_ignore(just(Token::CaseKeyword))
+            .then(Name::parser())
+            .then_ignore(just(Token::Equals))
+            .then(Expression::parser(statement_parser))
             .then_ignore(just(Token::Semicolon))
-            .map(|(visibility, elements)| Self {
+            .map(|((visibility, name), expression)| Self {
                 visibility,
-                elements,
+                name,
+                expression,
             })
+            .labelled("EnumCaseDeclaration")
     }
 }

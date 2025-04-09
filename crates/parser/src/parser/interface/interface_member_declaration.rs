@@ -17,12 +17,12 @@ pub enum InterfaceMemberDeclaration<'a> {
 impl<'a> InterfaceMemberDeclaration<'a> {
     pub fn parser<I>(
         statement_parser: BoxedParser<'a, I, Statement<'a>>,
-    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>>
+    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
-        let class_const_declaration =
-            ClassConstDeclaration::parser().map(Self::ClassConstDeclaration);
+        let class_const_declaration = ClassConstDeclaration::parser(statement_parser.clone())
+            .map(Self::ClassConstDeclaration);
         let method_declaration =
             MethodDeclaration::parser(statement_parser).map(Self::MethodDeclaration);
 

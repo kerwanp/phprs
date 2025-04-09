@@ -3,7 +3,10 @@ use chumsky::{prelude::*, Parser};
 
 use crate::parser::atoms::name::variable_name::VariableName;
 use crate::parser::expressions::Expression;
+use crate::parser::BoxedParser;
 use phprs_lexer::Token;
+
+use super::Statement;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct StaticVariableDeclaration<'a> {
@@ -12,12 +15,15 @@ pub struct StaticVariableDeclaration<'a> {
 }
 
 impl<'a> StaticVariableDeclaration<'a> {
-    pub fn parser<I>() -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>>
+    pub fn parser<I>(
+        statement_parser: BoxedParser<'a, I, Statement<'a>>,
+    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
+        // TODO: Fix that
         let initializer = just(Token::Equals)
-            .ignore_then(Expression::parser())
+            .ignore_then(Expression::parser(statement_parser))
             .or_not();
 
         VariableName::parser()
@@ -32,13 +38,15 @@ pub struct FunctionStaticDeclaration<'a> {
 }
 
 impl<'a> FunctionStaticDeclaration<'a> {
-    pub fn parser<I>() -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>>
+    pub fn parser<I>(
+        statement_parser: BoxedParser<'a, I, Statement<'a>>,
+    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
         just(Token::StaticKeyword)
             .ignore_then(
-                StaticVariableDeclaration::parser()
+                StaticVariableDeclaration::parser(statement_parser)
                     .separated_by(just(Token::Comma))
                     .collect(),
             )

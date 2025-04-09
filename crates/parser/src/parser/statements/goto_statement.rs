@@ -8,7 +8,7 @@ use phprs_lexer::Token;
 pub struct GotoStatement<'a>(pub Name<'a>);
 
 impl<'a> GotoStatement<'a> {
-    pub fn parser<I>() -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>>
+    pub fn parser<I>() -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {

@@ -19,6 +19,7 @@ pub enum ListOrVariable<'a> {
 
 impl<'a> ListOrVariable<'a> {
     pub fn parser<I>(
+        statement_parser: BoxedParser<'a, I, Statement<'a>>,
         list_instrinsic: BoxedParser<'a, I, ListIntrinsic<'a>>,
     ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
@@ -27,7 +28,7 @@ impl<'a> ListOrVariable<'a> {
         let variable = just(Token::Ampersand)
             .or_not()
             .map(|t| t.is_some())
-            .then(Variable::parser(Expression::parser().boxed()))
+            .then(Variable::parser(Expression::parser(statement_parser)))
             .map(|(reference, variable)| Self::Variable {
                 reference,
                 variable,
@@ -46,21 +47,26 @@ pub enum ListIntrinsic<'a> {
 }
 
 impl<'a> ListIntrinsic<'a> {
-    pub fn parser<I>() -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
+    pub fn parser<I>(
+        statement_parser: BoxedParser<'a, I, Statement<'a>>,
+    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
         recursive(|list_intrinsic| {
-            let keyed = Expression::parser()
+            let keyed = Expression::parser(statement_parser.clone())
                 .then_ignore(just(Token::DoubleArrow))
-                .then(ListOrVariable::parser(list_intrinsic.clone().boxed()))
+                .then(ListOrVariable::parser(
+                    statement_parser.clone(),
+                    list_intrinsic.clone().boxed(),
+                ))
                 .map(|(expression, value)| (expression, value))
                 .separated_by(just(Token::Comma))
                 .allow_trailing()
                 .collect()
                 .map(Self::Keyed);
 
-            let unkeyed = ListOrVariable::parser(list_intrinsic.boxed())
+            let unkeyed = ListOrVariable::parser(statement_parser, list_intrinsic.boxed())
                 .separated_by(just(Token::Comma))
                 .allow_trailing()
                 .collect()
@@ -84,20 +90,22 @@ pub enum ForeachValue<'a> {
 }
 
 impl<'a> ForeachValue<'a> {
-    pub fn parser<I>() -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>>
+    pub fn parser<I>(
+        statement_parser: BoxedParser<'a, I, Statement<'a>>,
+    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>>
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
         let expression = just(Token::Ampersand)
             .or_not()
             .map(|t| t.is_some())
-            .then(Expression::parser())
+            .then(Expression::parser(statement_parser.clone()))
             .map(|(reference, expression)| Self::Expression {
                 reference,
                 expression,
             });
 
-        let list_intrinsic = ListIntrinsic::parser().map(Self::ListIntrinsic);
+        let list_intrinsic = ListIntrinsic::parser(statement_parser).map(Self::ListIntrinsic);
 
         expression.or(list_intrinsic)
     }
@@ -118,16 +126,16 @@ impl<'a> ForeachStatement<'a> {
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
-        let foreach_key = Expression::parser()
+        let foreach_key = Expression::parser(statement_parser.clone())
             .then_ignore(just(Token::DoubleArrow))
             .or_not();
 
         let header = just(Token::ForeachKeyword)
             .ignore_then(just(Token::OpenParen))
-            .ignore_then(Expression::parser())
+            .ignore_then(Expression::parser(statement_parser.clone()))
             .then_ignore(just(Token::AsKeyword))
             .then(foreach_key)
-            .then(ForeachValue::parser())
+            .then(ForeachValue::parser(statement_parser.clone()))
             .then_ignore(just(Token::CloseParen))
             .map(|((collection_name, key), value)| (collection_name, key, value));
 

@@ -5,6 +5,7 @@ use chumsky::Parser;
 use phprs_lexer::Token;
 use primary_expression::PrimaryExpression;
 
+use super::statements::Statement;
 use super::BoxedParser;
 
 pub mod anonymous_function_expression;
@@ -71,13 +72,16 @@ pub enum Expression<'a> {
 
 impl<'a> Expression<'a> {
     // pub fn parser<I>() -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
-    pub fn parser<I>() -> BoxedParser<'a, I, Self>
+    pub fn parser<I>(
+        statement_parser: BoxedParser<'a, I, Statement<'a>>,
+    ) -> BoxedParser<'a, I, Self>
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
         recursive(|expression_parser| {
-            let atom = PrimaryExpression::parser(expression_parser.clone().boxed())
-                .map(Expression::Primary);
+            let atom =
+                PrimaryExpression::parser(statement_parser, expression_parser.clone().boxed())
+                    .map(Expression::Primary);
 
             let conditional_infix = just(Token::Question)
                 .ignore_then(expression_parser.or_not())
@@ -211,11 +215,13 @@ impl<'a> Expression<'a> {
         .boxed()
     }
 
-    pub fn list_parser<I>() -> impl Parser<'a, I, Vec<Self>, extra::Err<Rich<'a, Token<'a>>>> + Clone
+    pub fn list_parser<I>(
+        statement_parser: BoxedParser<'a, I, Statement<'a>>,
+    ) -> impl Parser<'a, I, Vec<Self>, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
-        Self::parser()
+        Self::parser(statement_parser)
             .separated_by(just(Token::Comma))
             .at_least(1)
             .collect()
@@ -231,7 +237,8 @@ mod tests {
     fn parse(src: &str) -> Result<Expression, ()> {
         let tokens = tokenize(src);
 
-        Expression::parser()
+        let statement_parser = Statement::parser().boxed();
+        Expression::parser(statement_parser)
             .parse(tokens)
             .into_result()
             .map_err(|_| ())

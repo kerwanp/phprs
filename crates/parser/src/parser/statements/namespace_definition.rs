@@ -21,7 +21,7 @@ pub enum NamespaceDefinition<'a> {
 impl<'a> NamespaceDefinition<'a> {
     pub fn parser<I>(
         statement_parser: BoxedParser<'a, I, Statement<'a>>,
-    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>>
+    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {

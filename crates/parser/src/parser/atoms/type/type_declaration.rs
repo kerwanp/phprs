@@ -6,12 +6,12 @@ use phprs_lexer::Token;
 use super::Type;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct TypeDeclaration {
+pub struct TypeDeclaration<'a> {
     pub optional: bool,
-    pub r#type: Type,
+    pub r#type: Type<'a>,
 }
 
-impl<'a> TypeDeclaration {
+impl<'a> TypeDeclaration<'a> {
     pub fn parser<I>() -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,

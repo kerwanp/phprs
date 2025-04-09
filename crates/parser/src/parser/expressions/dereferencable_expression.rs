@@ -37,15 +37,15 @@ impl<'a> DereferencableExpression<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::tokenize;
+    use crate::parser::{statements::Statement, tokenize};
 
     use super::*;
 
     fn parse(src: &str) -> Result<DereferencableExpression, ()> {
         let token_stream = tokenize(src);
 
-        let expression_parser = Expression::parser().boxed();
-        DereferencableExpression::parser(expression_parser)
+        let statement_parser = Statement::parser().boxed();
+        DereferencableExpression::parser(Expression::parser(statement_parser))
             .parse(token_stream)
             .into_result()
             .map_err(|_| ())

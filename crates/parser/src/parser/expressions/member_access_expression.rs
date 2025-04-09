@@ -25,14 +25,15 @@ impl<'a> MemberAccessExpression<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::tokenize;
+    use crate::parser::{statements::Statement, tokenize};
 
     use super::*;
 
     fn parse(src: &str) -> Result<MemberAccessExpression, ()> {
         let token_stream = tokenize(src);
 
-        let expression_parser = Expression::parser().boxed();
+        let statement_parser = Statement::parser().boxed();
+        let expression_parser = Expression::parser(statement_parser).boxed();
         MemberAccessExpression::parser(expression_parser.clone())
             .parse(token_stream)
             .into_result()

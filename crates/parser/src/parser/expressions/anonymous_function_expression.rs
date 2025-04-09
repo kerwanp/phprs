@@ -16,12 +16,13 @@ pub struct AnonymousFunctionCreationExpression<'a> {
     pub reference: bool,
     pub parameters: Vec<ParameterDeclaration<'a>>,
     // TODO: Use clause
-    // pub body: CompoundStatement<'a>,
-    pub return_type: Option<ReturnType>,
+    pub body: CompoundStatement<'a>,
+    pub return_type: Option<ReturnType<'a>>,
 }
 
 impl<'a> AnonymousFunctionCreationExpression<'a> {
     pub fn parser<I>(
+        statement_parser: BoxedParser<'a, I, Statement<'a>>,
         expression_parser: BoxedParser<'a, I, Expression<'a>>,
     ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
@@ -35,22 +36,23 @@ impl<'a> AnonymousFunctionCreationExpression<'a> {
         // TODO: Use clause
         let return_type = ReturnType::parser().or_not();
 
-        // // TODO: might make cycles
-        // let body = CompoundStatement::parser(Statement::parser().boxed());
+        let body = CompoundStatement::parser(statement_parser);
 
         static_
             .then_ignore(just(Token::FunctionKeyword))
             .then(reference)
             .then(parameters)
             .then(return_type)
-            // .then(body)
-            .map(|((((static_, reference), parameters), return_type))| Self {
-                static_,
-                reference,
-                parameters,
-                // body,
-                return_type,
-            })
+            .then(body)
+            .map(
+                |((((static_, reference), parameters), return_type), body)| Self {
+                    static_,
+                    reference,
+                    parameters,
+                    body,
+                    return_type,
+                },
+            )
             .labelled("AnonymousFunctionExpression")
     }
 }
@@ -64,16 +66,20 @@ mod tests {
     fn parse(src: &str) -> Result<AnonymousFunctionCreationExpression, ()> {
         let token_stream = tokenize(src);
 
-        AnonymousFunctionCreationExpression::parser(Expression::parser())
-            .parse(token_stream)
-            .into_result()
-            .map_err(|_| ())
+        let statement_parser = Statement::parser().boxed();
+        AnonymousFunctionCreationExpression::parser(
+            statement_parser.clone(),
+            Expression::parser(statement_parser),
+        )
+        .parse(token_stream)
+        .into_result()
+        .map_err(|_| ())
     }
 
     #[test]
     fn simple() {
         assert!(matches!(
-            parse(r#"static function ()"#),
+            parse(r#"static function () {}"#),
             Ok(AnonymousFunctionCreationExpression { .. })
         ));
     }

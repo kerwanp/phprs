@@ -26,13 +26,14 @@ pub enum ClassMemberDeclaration<'a> {
 impl<'a> ClassMemberDeclaration<'a> {
     pub fn parser<I>(
         statement_parser: BoxedParser<'a, I, Statement<'a>>,
-    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>>
+    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
-        let class_const_declaration =
-            ClassConstDeclaration::parser().map(Self::ClassConstDeclaration);
-        let property_declaration = PropertyDeclaration::parser().map(Self::PropertyDeclaration);
+        let class_const_declaration = ClassConstDeclaration::parser(statement_parser.clone())
+            .map(Self::ClassConstDeclaration);
+        let property_declaration =
+            PropertyDeclaration::parser(statement_parser.clone()).map(Self::PropertyDeclaration);
         let method_declaration =
             MethodDeclaration::parser(statement_parser.clone()).map(Self::MethodDeclaration);
         let constructor_declaration = ConstructorDeclaration::parser(statement_parser.clone())

@@ -4,6 +4,8 @@ use chumsky::{error::Rich, extra, input::ValueInput, span::SimpleSpan, Parser};
 use phprs_lexer::Token;
 
 use crate::parser::expressions::Expression;
+use crate::parser::statements::Statement;
+use crate::parser::BoxedParser;
 
 use super::name::Name;
 
@@ -14,22 +16,28 @@ pub struct ConstElement<'a> {
 }
 
 impl<'a> ConstElement<'a> {
-    pub fn parser<I>() -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
+    pub fn parser<I>(
+        statement_parser: BoxedParser<'a, I, Statement<'a>>,
+    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
         Name::parser()
             .then_ignore(just(Token::Equals))
-            .then(Expression::parser())
+            .then(Expression::parser(statement_parser))
             .map(|(name, expression)| ConstElement { name, expression })
             .labelled("ConstElement")
     }
 
-    pub fn list_parser<I>() -> impl Parser<'a, I, Vec<Self>, extra::Err<Rich<'a, Token<'a>>>> + Clone
+    pub fn list_parser<I>(
+        statement_parser: BoxedParser<'a, I, Statement<'a>>,
+    ) -> impl Parser<'a, I, Vec<Self>, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
-        Self::parser().separated_by(just(Token::Comma)).collect()
+        Self::parser(statement_parser)
+            .separated_by(just(Token::Comma))
+            .collect()
     }
 }
 
@@ -47,7 +55,7 @@ mod tests {
     fn parse(src: &str) -> Result<ConstElement, ()> {
         let token_stream = tokenize(src);
 
-        ConstElement::parser()
+        ConstElement::parser(Statement::parser())
             .parse(token_stream)
             .into_result()
             .map_err(|_| ())
@@ -56,7 +64,7 @@ mod tests {
     fn parse_list(src: &str) -> Result<Vec<ConstElement>, ()> {
         let token_stream = tokenize(src);
 
-        ConstElement::list_parser()
+        ConstElement::list_parser(Statement::parser())
             .parse(token_stream)
             .into_result()
             .map_err(|_| ())

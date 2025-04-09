@@ -18,21 +18,21 @@ pub struct CaseStatement<'a> {
 
 impl<'a> CaseStatement<'a> {
     pub fn parser<I>(
-        statements_parser: BoxedParser<'a, I, Vec<Statement<'a>>>,
-    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>>
+        statement_parser: BoxedParser<'a, I, Statement<'a>>,
+    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
         let terminator = choice((just(Token::Colon), just(Token::Semicolon)));
 
         let head = just(Token::CaseKeyword)
-            .ignore_then(Expression::parser())
+            .ignore_then(Expression::parser(statement_parser.clone()))
             .map(Some);
         let default_head = just(Token::DefaultKeyword).map(|_| None);
 
         head.or(default_head)
             .then(terminator)
-            .then(statements_parser)
+            .then(Statement::list_parser(statement_parser))
             .map(|((expression, terminator), statements)| CaseStatement {
                 expression,
                 terminator,
@@ -49,28 +49,24 @@ pub struct SwitchStatement<'a> {
 
 impl<'a> SwitchStatement<'a> {
     pub fn parser<I>(
-        statements_parser: BoxedParser<'a, I, Vec<Statement<'a>>>,
-    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>>
+        statement_parser: BoxedParser<'a, I, Statement<'a>>,
+    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
-        let expr =
-            Expression::parser().delimited_by(just(Token::OpenParen), just(Token::CloseParen));
+        let expr = Expression::parser(statement_parser.clone())
+            .delimited_by(just(Token::OpenParen), just(Token::CloseParen));
 
         let switch = just(Token::SwitchKeyword).ignore_then(expr);
         let body1 = just(Token::OpenBrace)
             .ignore_then(
-                CaseStatement::parser(statements_parser.clone())
+                CaseStatement::parser(statement_parser.clone())
                     .repeated()
                     .collect(),
             )
             .then_ignore(just(Token::CloseBrace));
         let body2 = just(Token::Colon)
-            .ignore_then(
-                CaseStatement::parser(statements_parser)
-                    .repeated()
-                    .collect(),
-            )
+            .ignore_then(CaseStatement::parser(statement_parser).repeated().collect())
             .then_ignore(just(Token::EndSwitchKeyword));
 
         switch
@@ -96,7 +92,7 @@ mod tests {
     fn parse_case_statement(src: &str) -> Result<CaseStatement, ()> {
         let token_stream = tokenize(src);
 
-        CaseStatement::parser(Statement::list_parser(Statement::parser().boxed()).boxed())
+        CaseStatement::parser(Statement::parser().boxed())
             .parse(token_stream)
             .into_result()
             .map_err(|_| ())
@@ -152,7 +148,7 @@ mod tests {
     fn parse(src: &str) -> Result<SwitchStatement, ()> {
         let token_stream = tokenize(src);
 
-        SwitchStatement::parser(Statement::list_parser(Statement::parser().boxed()).boxed())
+        SwitchStatement::parser(Statement::parser().boxed())
             .parse(token_stream)
             .into_result()
             .map_err(|_| ())

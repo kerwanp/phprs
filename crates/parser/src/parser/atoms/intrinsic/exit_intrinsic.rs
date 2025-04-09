@@ -31,14 +31,14 @@ impl<'a> ExitIntrinsic<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::tokenize;
+    use crate::parser::{statements::Statement, tokenize};
 
     use super::*;
 
     fn parse(src: &str) -> Result<ExitIntrinsic, ()> {
         let token_stream = tokenize(src);
 
-        ExitIntrinsic::parser(Expression::parser().boxed())
+        ExitIntrinsic::parser(Expression::parser(Statement::parser()))
             .parse(token_stream)
             .into_result()
             .map_err(|_| ())

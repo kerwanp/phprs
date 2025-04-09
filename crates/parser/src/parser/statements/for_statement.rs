@@ -18,11 +18,11 @@ pub struct ForStatement<'a> {
 impl<'a> ForStatement<'a> {
     pub fn parser<I>(
         statement_parser: BoxedParser<'a, I, Statement<'a>>,
-    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>>
+    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
-        let expression_group = Expression::parser()
+        let expression_group = Expression::parser(statement_parser.clone())
             .separated_by(just(Token::Comma))
             .collect();
         let head = just(Token::ForKeyword)

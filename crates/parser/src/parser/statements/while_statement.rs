@@ -22,7 +22,8 @@ impl<'a> WhileStatement<'a> {
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
         let head = just(Token::WhileKeyword).ignore_then(
-            Expression::parser().delimited_by(just(Token::OpenParen), just(Token::CloseParen)),
+            Expression::parser(statement_parser.clone())
+                .delimited_by(just(Token::OpenParen), just(Token::CloseParen)),
         );
 
         let body1 = statement_parser.clone().map(|s| vec![s]);

@@ -20,7 +20,7 @@ pub enum CallableExpression<'a> {
 impl<'a> CallableExpression<'a> {
     pub fn parser<I>(
         expression_parser: BoxedParser<'a, I, Expression<'a>>,
-    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>>
+    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {

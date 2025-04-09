@@ -5,6 +5,7 @@ pub mod continue_statement;
 pub mod declare_statement;
 pub mod do_statement;
 pub mod echo_statement;
+pub mod enum_declaration;
 pub mod expression_statement;
 pub mod for_statement;
 pub mod foreach_statement;
@@ -35,6 +36,7 @@ use continue_statement::ContinueStatement;
 use declare_statement::DeclareStatement;
 use do_statement::DoStatement;
 use echo_statement::EchoStatement;
+use enum_declaration::EnumDeclaration;
 use expression_statement::ExpressionStatement;
 use for_statement::ForStatement;
 use foreach_statement::ForeachStatement;
@@ -83,6 +85,7 @@ pub enum Statement<'a> {
     ConstDeclaration(ConstDeclaration<'a>),
     FunctionDefinition(FunctionDefinition<'a>),
     ClassDeclaration(ClassDeclaration<'a>),
+    EnumDeclaration(EnumDeclaration<'a>),
     InterfaceDeclaration(InterfaceDeclaration<'a>),
     TraitDeclaration(TraitDeclaration<'a>),
     NamespaceDefinition(NamespaceDefinition<'a>),
@@ -92,7 +95,7 @@ pub enum Statement<'a> {
 }
 
 impl<'a> Statement<'a> {
-    pub fn parser<I>() -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
+    pub fn parser<I>() -> BoxedParser<'a, I, Self>
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
@@ -100,8 +103,9 @@ impl<'a> Statement<'a> {
             let compound_statement =
                 CompoundStatement::parser(parser.clone().boxed()).map(Self::Compound);
             let named_label_statement = NamedLabelStatement::parser().map(Self::NamedLabel);
-            let expression_statement = ExpressionStatement::parser().map(Self::Expression);
-            let echo_statement = EchoStatement::parser().map(Self::Echo);
+            let expression_statement =
+                ExpressionStatement::parser(parser.clone().boxed()).map(Self::Expression);
+            let echo_statement = EchoStatement::parser(parser.clone().boxed()).map(Self::Echo);
 
             let namespace_use_declaration =
                 NamespaceUseDeclaration::parser().map(Self::NamespaceUseDeclaration);
@@ -111,25 +115,28 @@ impl<'a> Statement<'a> {
                 .map(|statement| Self::If(Box::new(statement)));
             // Ig parser chaining could be better here
             let switch_statement =
-                SwitchStatement::parser(Self::list_parser(parser.clone().boxed()).boxed())
-                    .map(Self::Switch);
+                SwitchStatement::parser(parser.clone().boxed()).map(Self::Switch);
             let while_statement = WhileStatement::parser(parser.clone().boxed()).map(Self::While);
             let do_statement = DoStatement::parser(parser.clone().boxed())
                 .map(|statement| Self::Do(Box::new(statement)));
             let for_statement = ForStatement::parser(parser.clone().boxed()).map(Self::For);
             let goto_statement = GotoStatement::parser().map(Self::Goto);
             let continue_statement = ContinueStatement::parser().map(Self::Continue);
-            let return_statement = ReturnStatement::parser().map(Self::Return);
-            let throw_statement = ThrowStatement::parser().map(Self::Throw);
-            let unset_statement = UnsetStatement::parser().map(Self::Unset);
+            let return_statement =
+                ReturnStatement::parser(parser.clone().boxed()).map(Self::Return);
+            let throw_statement = ThrowStatement::parser(parser.clone().boxed()).map(Self::Throw);
+            let unset_statement = UnsetStatement::parser(parser.clone().boxed()).map(Self::Unset);
             let namespace_definition =
                 NamespaceDefinition::parser(parser.clone().boxed()).map(Self::NamespaceDefinition);
-            let const_declaration = ConstDeclaration::parser().map(Self::ConstDeclaration);
-            let global_declaration = GlobalDeclaration::parser().map(Self::GlobalDeclaration);
+            let const_declaration =
+                ConstDeclaration::parser(parser.clone().boxed()).map(Self::ConstDeclaration);
+            let global_declaration =
+                GlobalDeclaration::parser(parser.clone().boxed()).map(Self::GlobalDeclaration);
             let function_definition =
                 FunctionDefinition::parser(parser.clone().boxed()).map(Self::FunctionDefinition);
             let function_static_declaration =
-                FunctionStaticDeclaration::parser().map(Self::FunctionStaticDeclaration);
+                FunctionStaticDeclaration::parser(parser.clone().boxed())
+                    .map(Self::FunctionStaticDeclaration);
             let declare_statement =
                 DeclareStatement::parser(parser.clone().boxed()).map(Self::Declare);
             let try_statement = TryStatement::parser(parser.clone().boxed()).map(Self::Try);
@@ -137,12 +144,14 @@ impl<'a> Statement<'a> {
                 ForeachStatement::parser(parser.clone().boxed()).map(Self::Foreach);
             let class_declaration =
                 ClassDeclaration::parser(parser.clone().boxed()).map(Self::ClassDeclaration);
+            let enum_declaration =
+                EnumDeclaration::parser(parser.clone().boxed()).map(Self::EnumDeclaration);
             let interface_declaration = InterfaceDeclaration::parser(parser.clone().boxed())
                 .map(Self::InterfaceDeclaration);
             let trait_declaration =
                 TraitDeclaration::parser(parser.clone().boxed()).map(Self::TraitDeclaration);
 
-            choice((
+            let c1 = choice((
                 echo_statement,
                 named_label_statement,
                 expression_statement,
@@ -167,17 +176,21 @@ impl<'a> Statement<'a> {
                 try_statement,
                 foreach_statement,
                 class_declaration,
+                enum_declaration,
                 interface_declaration,
-                trait_declaration,
-            ))
-            .boxed()
-            .labelled("Statement")
+            ));
+
+            let c2 = choice((trait_declaration,));
+
+            choice((c1, c2)).boxed()
         })
+        .labelled("Statement")
+        .boxed()
     }
 
     pub fn list_parser<I>(
         statement_parser: BoxedParser<'a, I, Statement<'a>>,
-    ) -> impl Parser<'a, I, Vec<Self>, extra::Err<Rich<'a, Token<'a>>>>
+    ) -> impl Parser<'a, I, Vec<Self>, extra::Err<Rich<'a, Token<'a>>>> + Clone
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {

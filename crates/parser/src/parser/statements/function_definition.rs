@@ -18,12 +18,14 @@ pub struct FunctionDefinition<'a> {
     reference: bool,
     parameters: Vec<ParameterDeclaration<'a>>,
     variadic: Option<VariadicParameter<'a>>,
-    return_type: Option<ReturnType>,
+    return_type: Option<ReturnType<'a>>,
     body: CompoundStatement<'a>,
 }
 
 impl<'a> FunctionDefinition<'a> {
-    pub fn parameters_parser<I>() -> impl Parser<
+    pub fn parameters_parser<I>(
+        statement_parser: BoxedParser<'a, I, Statement<'a>>,
+    ) -> impl Parser<
         'a,
         I,
         (Vec<ParameterDeclaration<'a>>, Option<VariadicParameter<'a>>),
@@ -32,8 +34,9 @@ impl<'a> FunctionDefinition<'a> {
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
-        let parameters = ParameterDeclaration::parser(Expression::parser())
+        let parameters = ParameterDeclaration::parser(Expression::parser(statement_parser))
             .separated_by(just(Token::Comma))
+            .allow_trailing()
             .collect();
 
         let variadic = VariadicParameter::parser();
@@ -66,7 +69,7 @@ impl<'a> FunctionDefinition<'a> {
             .then(Name::parser());
 
         let parameters = just(Token::OpenParen)
-            .ignore_then(Self::parameters_parser())
+            .ignore_then(Self::parameters_parser(statement_parser.clone()))
             .then_ignore(just(Token::CloseParen));
 
         start

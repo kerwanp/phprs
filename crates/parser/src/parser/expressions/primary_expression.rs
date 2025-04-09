@@ -19,7 +19,7 @@ use super::require_once_expression::RequireOnceExpression;
 use super::reserved_word_expression::ReservedWordExpression;
 use super::Expression;
 use chumsky::prelude::*;
-use chumsky::{error::Rich, extra, input::ValueInput, Parser};
+use chumsky::{input::ValueInput, Parser};
 
 use phprs_lexer::Token;
 
@@ -49,8 +49,9 @@ pub enum PrimaryExpression<'a> {
 
 impl<'a> PrimaryExpression<'a> {
     pub fn parser<I>(
+        statement_parser: BoxedParser<'a, I, Statement<'a>>,
         expression_parser: BoxedParser<'a, I, Expression<'a>>,
-    ) -> impl Parser<'a, I, Self, extra::Err<Rich<'a, Token<'a>>>> + Clone
+    ) -> BoxedParser<'a, I, Self>
     where
         I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
     {
@@ -70,9 +71,11 @@ impl<'a> PrimaryExpression<'a> {
         let intrinsic =
             Intrinsic::parser(expression_parser.clone()).map(|v| Self::Intrinsic(Box::new(v)));
 
-        let anonymous_function_creation =
-            AnonymousFunctionCreationExpression::parser(expression_parser.clone())
-                .map(Self::AnonymousFunctionCreation);
+        let anonymous_function_creation = AnonymousFunctionCreationExpression::parser(
+            statement_parser,
+            expression_parser.clone(),
+        )
+        .map(Self::AnonymousFunctionCreation);
 
         let object_creation = ObjectCreationExpression::parser(expression_parser.clone())
             .map(|v| Self::ObjectCreation(Box::new(v)));
@@ -125,6 +128,7 @@ impl<'a> PrimaryExpression<'a> {
             expression,
         ))
         .labelled("Expression")
+        .boxed()
     }
 }
 
@@ -137,10 +141,14 @@ mod tests {
     fn parse(src: &str) -> Result<PrimaryExpression, ()> {
         let tokens = tokenize(src);
 
-        PrimaryExpression::parser(Expression::parser())
-            .parse(tokens)
-            .into_result()
-            .map_err(|_| ())
+        let statement_parser = Statement::parser().boxed();
+        PrimaryExpression::parser(
+            statement_parser.clone(),
+            Expression::parser(statement_parser),
+        )
+        .parse(tokens)
+        .into_result()
+        .map_err(|_| ())
     }
 
     #[test]
@@ -194,7 +202,7 @@ mod tests {
     #[test]
     fn anonymous_function_creation() {
         assert!(matches!(
-            parse(r#"function ()"#),
+            parse(r#"function () {}"#),
             Ok(PrimaryExpression::AnonymousFunctionCreation(_))
         ));
     }

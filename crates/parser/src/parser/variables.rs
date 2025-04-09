@@ -100,14 +100,14 @@ impl<'a> Variable<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::tokenize;
+    use crate::parser::{statements::Statement, tokenize};
 
     use super::*;
 
     fn parse(src: &str) -> Result<Variable, ()> {
         let token_stream = tokenize(src);
 
-        Variable::parser(Expression::parser().boxed())
+        Variable::parser(Expression::parser(Statement::parser()))
             .parse(token_stream)
             .into_result()
             .map_err(|_| ())

@@ -19,7 +19,7 @@ pub struct MethodDeclaration<'a> {
     reference: bool,
     parameters: Vec<ParameterDeclaration<'a>>,
     variadic: Option<VariadicParameter<'a>>,
-    return_type: Option<ReturnType>,
+    return_type: Option<ReturnType<'a>>,
     body: Option<CompoundStatement<'a>>,
 }
 
@@ -40,7 +40,9 @@ impl<'a> MethodDeclaration<'a> {
             .then(Name::parser())
             .then(
                 just(Token::OpenParen)
-                    .ignore_then(FunctionDefinition::parameters_parser())
+                    .ignore_then(FunctionDefinition::parameters_parser(
+                        statement_parser.clone(),
+                    ))
                     .then_ignore(just(Token::CloseParen)),
             )
             .then(ReturnType::parser().or_not());

@@ -631,9 +631,9 @@ dependencies = [
 name = "phprs"
 version = "0.1.0"
 dependencies = [
- "phprs_lexer",
- "phprs_lsp",
- "phprs_parser",
+ "anyhow",
+ "phprs_cli",
+ "tokio",
 ]
 
 [[package]]

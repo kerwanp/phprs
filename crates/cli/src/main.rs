@@ -1,5 +1,10 @@
+mod lsp;
+mod parse;
+
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use lsp::LspCommand;
+use parse::ParseCommand;
 
 #[derive(Debug, Parser)]
 struct Cli {
@@ -9,7 +14,8 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
-    Lsp,
+    Lsp(LspCommand),
+    Parse(ParseCommand),
 }
 
 #[tokio::main]
@@ -20,6 +26,7 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Command::Lsp => phprs_lsp::run().await,
+        Command::Lsp(cmd) => lsp::run(cmd).await,
+        Command::Parse(cmd) => parse::run(cmd),
     }
 }

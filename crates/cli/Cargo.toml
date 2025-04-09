@@ -6,8 +6,12 @@ edition = "2024"
 [dependencies]
 clap = { version = "4.5.35", features = ["derive"] }
 phprs_lsp.workspace = true
+phprs_parser.workspace = true
 env_logger.workspace = true
 log.workspace = true
 anyhow.workspace = true
 dotenvy.workspace = true
 tokio.workspace = true
+chumsky = "0.10.0"
+ariadne = "0.5.1" 
+globwalk = "0.9.1"

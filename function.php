@@ -6,7 +6,7 @@ function test() {
     echo 'test';
 }
 
-enum Test {
+eTest {
     case TEST = "test";
 }
 

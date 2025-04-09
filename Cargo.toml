@@ -8,8 +8,8 @@ members = ["crates/*"]
 
 [workspace.dependencies]
 phprs_lexer = { path = "crates/lexer" }
-phprs_parserr = { path = "crates/parserr" }
+phprs_parser = { path = "crates/parser" }
 
 [dependencies]
 phprs_lexer.workspace = true
-phprs_parserr.workspace = true
+phprs_parser.workspace = true

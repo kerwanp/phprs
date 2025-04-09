@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-nom = "7.1.3"
-logos = "0.14.0"
 phprs_lexer.workspace = true
+ariadne = "0.2"
+chumsky = { version = "0.10.0", features = [
+  "pratt",
+  "unstable",
+  "nightly",
+] }

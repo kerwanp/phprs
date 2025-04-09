@@ -373,6 +373,18 @@ pub enum Token<'a> {
     #[token("real")]
     RealReservedWord,
 
+    #[token("self")]
+    SelfKeyword,
+
+    #[token("parent")]
+    ParentKeyworkd,
+
+    #[token("__construct")]
+    ConstructKeyword,
+
+    #[token("__destruct")]
+    DestructKeyword,
+
     // TODO: What is this??
     ReturnType,
     ScriptSectionPrependText,

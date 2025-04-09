@@ -1,59 +1,20 @@
-use nom::{branch::alt, bytes::complete::tag, combinator::opt, sequence::delimited, Parser};
+use super::statements::Statement;
+use chumsky::{input::ValueInput, prelude::*};
+use phprs_lexer::Token;
 
-use super::{statement::Statement, util::ws, Error};
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Debug)]
 pub struct Script<'a> {
-    statements: Vec<Statement<'a>>,
+    pub statements: Vec<Statement<'a>>,
 }
 
 impl<'a> Script<'a> {
-    // pub fn parser<'a>() -> impl Parser<&'a str, Script, Error<'a>> {
-    //     let start = ws(alt((tag("<?php"), tag("<?="))));
-    //     let end = ws(opt(tag("?>")));
-    //
-    //     tuple((start, end)).map(|_| Self {})
-    // }
-
-    pub fn parse(input: &'a str) -> nom::IResult<&'a str, Self, Error<'a>> {
-        let start = ws(alt((tag("<?php"), tag("<?="))));
-        let end = ws(opt(tag("?>")));
-        let inner = Statement::parse_many;
-        delimited(start, inner, end)
-            .map(|statements| Self { statements })
-            .parse(input)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::assert_matches::assert_matches;
-
-    #[test]
-    pub fn start() {
-        let test = Script::parse("<?php");
-        assert_matches!(test, Ok(("", Script { statements: _ })));
-    }
-
-    #[test]
-    pub fn with_end() {
-        let test = Script::parse("<?php ?>");
-        assert_matches!(test, Ok(("", Script { statements: _ })));
-    }
-
-    #[test]
-    pub fn equal() {
-        let test = Script::parse("<?= ?>");
-        assert_matches!(test, Ok(("", Script { statements: _ })));
-    }
-
-    #[test]
-    pub fn statements() {
-        let test = Script::parse(
-            "<?php
-0b110;",
-        );
-        assert_matches!(test, Ok(("", Script { statements: _ })));
+    pub fn parser<I>() -> impl Parser<'a, I, Script<'a>, extra::Err<Rich<'a, Token<'a>>>>
+    where
+        I: ValueInput<'a, Token = Token<'a>, Span = SimpleSpan>,
+    {
+        just(Token::ScriptSectionStartTag)
+            .ignore_then(Statement::list_parser(Statement::parser().boxed()))
+            .then_ignore(just(Token::EndOfFile))
+            .map(|statements| Script { statements })
     }
 }
